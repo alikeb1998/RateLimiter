@@ -27,13 +27,16 @@ public class StoreEdgeCasesTests
             WarmUpInitialCapacity= 5
         }));
 
+    [TearDown]
+    public async Task Cleanup() => await RedisHelper.DeleteCurrentTestKeysAsync();
+    
     // ---------- FIXED WINDOW ----------
 
     [Test]
     public async Task FixedWindow_ExactlyAtLimit_Allows_ButNextBlocks()
     {
         var store = MakeStore(false);
-        var key = "rl:fw:exact";
+        var key = RedisHelper.BuildKey("fw:exact");
         const int limit=5, window=10;
 
         for (int i = 0; i < limit; i++)
@@ -46,7 +49,7 @@ public class StoreEdgeCasesTests
     public async Task FixedWindow_WindowBoundary_NewWindowAllows()
     {
         var store = MakeStore(false);
-        var key = "rl:fw:boundary";
+        var key = RedisHelper.BuildKey("fw:boundary");
         const int limit=3, window=5;
 
         for (int i = 0; i < limit; i++)
@@ -102,7 +105,7 @@ public class StoreEdgeCasesTests
     public async Task TokenBucket_FractionalRefill_RoundsDown_ThenAllows()
     {
         var store = MakeStore(false);
-        var key = "rl:tb:fraction";
+        var key = RedisHelper.BuildKey("tb:fraction");
         const int cap=3, window=10; // refillRate=0.3 tokens/sec (floor)
 
         // drain
@@ -145,7 +148,7 @@ public class StoreEdgeCasesTests
     public async Task Hybrid_LogCapBlocks_EvenIfTokensRefilled()
     {
         var store = MakeStore(false);
-        var key = "rl:hy:logcap";
+        var key = RedisHelper.BuildKey("hy:logcap");
         const int cap=2, window=10;
 
         // hit cap quickly
@@ -163,7 +166,7 @@ public class StoreEdgeCasesTests
     public async Task Hybrid_Recovers_AfterWindowEviction()
     {
         var store = MakeStore(false);
-        var key = "rl:hy:recover";
+        var key = RedisHelper.BuildKey("hy:recover");
         const int cap=3, window=4;
 
         for (int i = 0; i < cap; i++)
@@ -182,7 +185,7 @@ public class StoreEdgeCasesTests
     public async Task WarmUp_Expiry_ResetsOnNextUse()
     {
         var store = MakeStore(false);
-        var bucket = "rl:bucket:warm-expire";
+        var bucket = RedisHelper.BuildKey("bucket:warm-expire");
 
         await store.WarmUpAsync(bucket, capacity: 2, expirySeconds: 2);
 
@@ -199,22 +202,32 @@ public class StoreEdgeCasesTests
     // ---------- FAIL-OPEN/CLOSE (NOSCRIPT) ----------
 
     [Test]
-    public async Task FailOpenTrue_Allows_OnScriptFlush()
+    public async Task FailOpenFalse_Blocks_OnScriptFlush()
     {
-        if (!await RedisHelper.TryScriptFlushAsync())
+        var store = MakeStore(failOpen: false);              // 1) create store (loads scripts)
+
+        if (!await RedisHelper.TryScriptFlushAsync())        // 2) NOW flush -> Redis forgets SHAs
             Assert.Ignore("Admin not available; skipping NOSCRIPT scenario.");
 
-        var store = MakeStore(true);
-        Assert.That(await store.TryIncrementAsync("rl:hy:failopen", 5, 10, Algorithm.Hybrid), Is.True);
+        var key = RedisHelper.BuildKey("hy:failclose");      // 3) call after flush => NOSCRIPT
+        var ok  = await store.TryIncrementAsync(key, 5, 10, Algorithm.Hybrid);
+
+        Assert.That(ok, Is.False, "With FailOpen=false, NOSCRIPT should block.");
     }
 
     [Test]
-    public async Task FailOpenFalse_Blocks_OnScriptFlush()
+    public async Task FailOpenTrue_Allows_OnScriptFlush()
     {
+        var store = MakeStore(failOpen: true);
+
         if (!await RedisHelper.TryScriptFlushAsync())
             Assert.Ignore("Admin not available; skipping NOSCRIPT scenario.");
 
-        var store = MakeStore(false);
-        Assert.That(await store.TryIncrementAsync("rl:hy:failclose", 5, 10, Algorithm.Hybrid), Is.False);
+        var key = RedisHelper.BuildKey("hy:failopen");
+        var ok  = await store.TryIncrementAsync(key, 5, 10, Algorithm.Hybrid);
+
+        Assert.That(ok, Is.True, "With FailOpen=true, NOSCRIPT should allow.");
     }
+
+ 
 }
