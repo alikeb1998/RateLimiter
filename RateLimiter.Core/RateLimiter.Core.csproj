@@ -2,45 +2,60 @@
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
-        <Authors>YourName</Authors>
-        <PackageId>MyCompany.RateLimiter</PackageId>
+
+        <!-- NuGet identity -->
+        <PackageId>RedGate.RedisRateLimiter</PackageId>
         <Version>1.0.0</Version>
-        <Description>Attribute‑based, distributed, hybrid rate limiter for ASP.NET Core</Description>
+        <Authors>Alikeb</Authors>
+        <Company>Alikeb</Company>
+        <Description>Attribute-based, distributed, hybrid rate limiter for ASP.NET Core</Description>
+        <PackageTags>aspnetcore;ratelimit;redis;middleware;dotnet8;token-bucket;sliding-window;fixed-window</PackageTags>
+
+        <!-- Repo metadata (helps SourceLink & NuGet page) -->
+        <RepositoryUrl>https://github.com/alikeb1998/RateLimiter/</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageProjectUrl>https://github.com/alikeb1998/RateLimiter/</PackageProjectUrl>
+
+        <!-- License + README shown on NuGet.org -->
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+
+        <!-- Pack settings -->
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <ContinuousIntegrationBuild Condition="'$(CI)' != ''">true</ContinuousIntegrationBuild>
     </PropertyGroup>
 
-    <!-- Pull in the full ASP.NET Core shared framework so you get IAsyncActionFilter, HttpOverrides, etc. -->
+    <!-- ASP.NET Core shared framework (filters, HttpOverrides, etc.) -->
     <ItemGroup>
         <FrameworkReference Include="Microsoft.AspNetCore.App" />
     </ItemGroup>
 
     <ItemGroup>
-        <!-- Redis client -->
         <PackageReference Include="StackExchange.Redis" Version="2.6.90" />
-
-        <!-- Polly circuit breaker -->
-        <PackageReference Include="Polly" Version="8.1.1" />
-
-        <!-- Azure App Configuration support -->
-        <PackageReference Include="Microsoft.Extensions.Configuration.AzureAppConfiguration" Version="6.0.0" />
-
-        <!-- OpenTelemetry hosting (upgrade to latest) -->
-        <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.4.0" />
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
     </ItemGroup>
 
-<!--    <ItemGroup>-->
-<!--        &lt;!&ndash; Include Lua scripts as content in the NuGet package &ndash;&gt;-->
-<!--        <None Include="LuaScripts\*.lua"-->
-<!--              Pack="true"-->
-<!--              PackagePath="content\LuaScripts\"-->
-<!--              CopyToOutputDirectory="Always" />-->
-<!--    </ItemGroup>-->
+    <!-- Ship Lua scripts and have them copied to consumer app's output (contentFiles) -->
     <ItemGroup>
-        <!-- Mark existing None items under LuaScripts to copy to output -->
+        <!-- For *this* project’s own output (debugging/local run) -->
         <None Update="LuaScripts\**\*.lua">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
-    </ItemGroup>
 
+        <!-- For the NuGet package: include as contentFiles and copy to output of *consuming* app -->
+        <Content Include="LuaScripts\**\*.lua">
+            <Pack>true</Pack>
+            <PackagePath>contentFiles\any\any\LuaScripts\</PackagePath>
+            <BuildAction>Content</BuildAction>
+            <CopyToOutput>true</CopyToOutput>
+        </Content>
+
+        <!-- README + LICENSE into the nupkg root -->
+        <None Include="README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
 
 </Project>

@@ -24,6 +24,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Required when the app runs behind reverse proxies to get the real client IP
+builder.Services.AddHttpContextAccessor();
+
 var app = builder.Build();
 
 // 5. Global exception handler
