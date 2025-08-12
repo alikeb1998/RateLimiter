@@ -1,4 +1,4 @@
-# RedGate.RedisRateLimiter
+# RedPortal.RedisRateLimiter
 
 Attribute‑based, **distributed** rate limiter for ASP.NET Core (.NET 8) backed by **Redis + Lua**.  
 Supports **Fixed Window**, **Sliding Log**, **Token Bucket**, and a **Hybrid** (Token‑Bucket + Sliding Log) algorithm.
@@ -16,7 +16,7 @@ Supports **Fixed Window**, **Sliding Log**, **Token Bucket**, and a **Hybrid** (
 ## Install
 
 ```bash
-dotnet add package RedGate.RedisRateLimiter
+dotnet add package RedPortal.RedisRateLimiter
 ```
 
 ---
