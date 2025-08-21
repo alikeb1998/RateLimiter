@@ -16,7 +16,7 @@ Supports **Fixed Window**, **Sliding Log**, **Token Bucket**, and a **Hybrid** (
 ## Install
 
 ```bash
-dotnet add package RedPortal.RedisRateLimiter
+dotnet add package RedPortal.RateLimiter
 ```
 
 ---
